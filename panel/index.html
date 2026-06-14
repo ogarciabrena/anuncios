@@ -75,7 +75,7 @@
 
 <div class="header">
   <h1>📺 Panel de Anuncios</h1>
-  <span class="url-live" id="urlLive"></span>
+  
 </div>
 
 <div class="main">
@@ -345,7 +345,6 @@ function syncColorPicker(id){
 function updatePreview(){
   const carpeta = document.getElementById('carpeta')?.value || 'mi-negocio';
   document.getElementById('previewUrl').textContent = `ogarciabrena.github.io/anuncios/${carpeta}`;
-  document.getElementById('urlLive').textContent = `ogarciabrena.github.io/anuncios/${carpeta}`;
   const iframe = document.getElementById('preview');
   iframe.srcdoc = getHTML();
 }
