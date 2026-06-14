@@ -1,41 +1,35 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Feliz Cumpleaños</title>
+<title>¡Feliz Cumpleaños Juana !</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#0a0020;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;text-align:center;padding:2rem}
-  canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
-  .content{position:relative;z-index:1}
-  .emoji-grande{font-size:6rem;animation:bounce 1s infinite alternate}
-  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-20px)}}
-  h1{font-size:4rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f472b6,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:.5rem 0;line-height:1.1}
-  .nombre{font-size:5rem;font-weight:900;color:#fff;text-shadow:0 0 40px rgba(251,191,36,.5);margin-bottom:1rem}
-  .mensaje{font-size:1.3rem;color:#c084fc;max-width:500px;line-height:1.6;margin-bottom:2rem}
-  .de-parte{color:#6b7280;font-size:1rem}
-</style>
-</head>
-<body>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0020;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;text-align:center;padding:2rem}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+.content{position:relative;z-index:1}
+.emoji-grande{font-size:5.5rem;animation:bounce 1s infinite alternate;display:block;margin-bottom:.5rem}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-18px)}}
+h1{font-size:3.5rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f472b6,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem;line-height:1.1}
+.nombre{font-size:5rem;font-weight:900;color:#fff;text-shadow:0 0 40px #fbbf2488;margin-bottom:1rem}
+.mensaje{font-size:1.2rem;color:#ffffffbb;max-width:500px;line-height:1.6;margin-bottom:1.5rem;white-space:pre-line}
+.de-parte{color:#ffffff55;font-size:.95rem}
+</style></head><body>
 <canvas id="c"></canvas>
 <div class="content">
-  <div class="emoji-grande">🎂</div>
-  <h1>¡Feliz Cumpleaños!</h1>
-  <div class="nombre">María</div>
-  <p class="mensaje">Hoy es un día muy especial.<br>Te deseamos todo lo mejor en este nuevo año de vida. 🎉</p>
-  <p class="de-parte">Con cariño · El equipo de Lonchería Flor de Azalea</p>
+<span class="emoji-grande">🎂</span>
+<h1>¡Feliz Cumpleaños!</h1>
+<div class="nombre">Juana </div>
+<p class="mensaje">Hoy es un día muy especial.
+Te deseamos todo lo mejor en este nuevo año de vida. 🎉</p>
+<p class="de-parte">Con cariño · El equipo </p>
 </div>
 <script>
-// Confeti
-const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-canvas.width=innerWidth;canvas.height=innerHeight;
-window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight});
-const piezas=[];const colores=['#fbbf24','#f472b6','#818cf8','#34d399','#60a5fa','#fb7185'];
-for(let i=0;i<120;i++){piezas.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight-innerHeight,w:8+Math.random()*8,h:8+Math.random()*8,color:colores[Math.floor(Math.random()*colores.length)],speed:2+Math.random()*3,rot:Math.random()*360,spin:Math.random()*6-3})}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);piezas.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();p.y+=p.speed;p.rot+=p.spin;if(p.y>innerHeight){p.y=-20;p.x=Math.random()*innerWidth}});requestAnimationFrame(draw)}
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+cv.width=innerWidth;cv.height=innerHeight;
+window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight});
+const cols=['#fbbf24','#f472b6','#818cf8','#fff','#fbbf24','#34d399'];
+const pz=[];
+for(let i=0;i<130;i++)pz.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight-innerHeight,w:7+Math.random()*9,h:7+Math.random()*9,c:cols[Math.floor(Math.random()*cols.length)],s:2+Math.random()*3,r:Math.random()*360,sp:Math.random()*6-3});
+function draw(){ctx.clearRect(0,0,cv.width,cv.height);pz.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();p.y+=p.s;p.r+=p.sp;if(p.y>cv.height){p.y=-20;p.x=Math.random()*cv.width}});requestAnimationFrame(draw)}
 draw();
 try{document.documentElement.requestFullscreen();}catch(e){}
-</script>
-</body>
-</html>
+</script></body></html>
