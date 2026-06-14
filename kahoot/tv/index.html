@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kahoot — Smart TV</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0020;color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow:hidden}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .5s}
+canvas.show{opacity:1}
+.wrap{position:relative;z-index:1;width:100%;max-width:1100px;text-align:center}
+
+/* Lobby */
+#s-lobby h1{font-size:3rem;font-weight:900;background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem}
+#s-lobby .url{font-size:1.1rem;color:#6366f1;margin-bottom:2rem;font-weight:600}
+.jugadores-grid{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;max-height:300px;overflow:hidden}
+.jugador-chip{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:999px;padding:.5rem 1.2rem;font-size:1rem;animation:aparecer .3s ease}
+@keyframes aparecer{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.esperando{color:#555;font-size:1rem;margin-top:2rem}
+
+/* Pregunta */
+#s-pregunta{display:none;width:100%}
+.preg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.preg-num{font-size:1rem;color:#888}
+.timer-grande{font-size:3rem;font-weight:900;color:#fbbf24;width:80px;text-align:center}
+.timer-bar{height:10px;background:#1a1a2e;border-radius:5px;margin-bottom:2rem;overflow:hidden}
+.timer-fill{height:100%;background:linear-gradient(90deg,#6366f1,#ec4899);border-radius:5px;transition:width 1s linear}
+.pregunta-grande{font-size:2.2rem;font-weight:800;margin-bottom:2rem;line-height:1.3;min-height:80px}
+.opciones-tv{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.opcion-tv{padding:1.5rem;border-radius:16px;font-size:1.3rem;font-weight:700;display:flex;align-items:center;gap:.8rem}
+.opcion-tv.A{background:#e74c3c}
+.opcion-tv.B{background:#3498db}
+.opcion-tv.C{background:#2ecc71}
+.opcion-tv.D{background:#f39c12}
+.opcion-tv.correcta{box-shadow:0 0 0 4px #fff;transform:scale(1.02)}
+.opcion-tv.incorrecta{opacity:.25}
+.letra-badge{background:rgba(0,0,0,.3);border-radius:8px;padding:.2rem .6rem;font-size:1rem}
+.respuestas-cnt{font-size:1rem;color:#666;margin-top:1rem}
+
+/* Resultado pregunta */
+#s-resultado{display:none;width:100%}
+.podio-tmp{display:flex;gap:1rem;justify-content:center;align-items:flex-end;margin:1.5rem 0}
+.podio-item{background:#1a1a2e;border-radius:12px;padding:1rem 1.5rem;text-align:center;min-width:140px}
+.podio-item.top{background:linear-gradient(135deg,#1a1000,#0d0800);border:2px solid #fbbf24}
+.podio-pos{font-size:1.5rem;font-weight:900;color:#fbbf24}
+.podio-nick{font-size:1rem;font-weight:700;margin:.2rem 0}
+.podio-pts{font-size:.9rem;color:#666}
+
+/* Final */
+#s-final{display:none;width:100%}
+.podio-final{display:flex;gap:1.5rem;justify-content:center;align-items:flex-end;margin:2rem 0}
+.pf-item{border-radius:16px;padding:1.5rem 2rem;text-align:center;min-width:160px}
+.pf-1{background:linear-gradient(135deg,#1a1000,#0d0800);border:3px solid #fbbf24;order:2}
+.pf-2{background:#1a1a2e;border:2px solid #888;order:1}
+.pf-3{background:#1a1a2e;border:2px solid #cd7f32;order:3}
+.pf-pos{font-size:2.5rem}
+.pf-nick{font-size:1.2rem;font-weight:700;margin:.3rem 0}
+.pf-pts{color:#a855f7;font-size:1rem;font-weight:600}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="wrap">
+
+  <!-- Lobby -->
+  <div id="s-lobby">
+    <h1>⚡ Kahoot</h1>
+    <p class="url">Únete en: ogarciabrena.github.io/anuncios/kahoot</p>
+    <div class="jugadores-grid" id="jugadoresGrid">
+      <p class="esperando">Esperando jugadores...</p>
+    </div>
+    <p class="esperando" id="cntJug"></p>
+  </div>
+
+  <!-- Pregunta en curso -->
+  <div id="s-pregunta">
+    <div class="preg-header">
+      <span class="preg-num" id="pregNum"></span>
+      <span class="timer-grande" id="timerNum">—</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="pregunta-grande" id="pregTxt"></div>
+    <div class="opciones-tv" id="opcionesTv"></div>
+    <div class="respuestas-cnt" id="respCnt"></div>
+  </div>
+
+  <!-- Resultado parcial -->
+  <div id="s-resultado">
+    <h2 style="font-size:1.5rem;margin-bottom:.5rem">✅ Respuesta correcta</h2>
+    <div class="pregunta-grande" id="resRespuesta" style="font-size:1.5rem;color:#2ecc71"></div>
+    <p style="color:#666;margin-bottom:1rem">Top jugadores</p>
+    <div class="podio-tmp" id="podioTmp"></div>
+  </div>
+
+  <!-- Final -->
+  <div id="s-final">
+    <h1 style="font-size:2.5rem;margin-bottom:.3rem">🏆 Juego Terminado</h1>
+    <p style="color:#666;margin-bottom:1rem">Podio final</p>
+    <div class="podio-final" id="podioFinal"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAhPB0i7phzAa9XMLsCpzFMFr7khWIhCNM",
+  authDomain: "anuncios-ogb.firebaseapp.com",
+  databaseURL: "https://anuncios-ogb-default-rtdb.firebaseio.com",
+  projectId: "anuncios-ogb",
+  storageBucket: "anuncios-ogb.firebasestorage.app",
+  messagingSenderId: "22034025245",
+  appId: "1:22034025245:web:26a1fbef1b025a46b9eff4"
+});
+const db = getDatabase(app);
+try{document.documentElement.requestFullscreen();}catch(e){}
+
+function show(id){
+  ['s-lobby','s-pregunta','s-resultado','s-final'].forEach(s=>
+    document.getElementById(s).style.display=s===id?'block':'none');
+}
+
+let timerIv = null;
+
+// Jugadores en lobby
+onValue(ref(db,'kahoot/jugadores'), snap => {
+  const grid = document.getElementById('jugadoresGrid');
+  if (!snap.exists()) { grid.innerHTML='<p class="esperando">Esperando jugadores...</p>'; return; }
+  const jug = Object.values(snap.val());
+  document.getElementById('cntJug').textContent = `${jug.length} jugador${jug.length!==1?'es':''} conectado${jug.length!==1?'s':''}`;
+  grid.innerHTML = jug.map(j=>`<div class="jugador-chip">🎮 ${j.nick}</div>`).join('');
+});
+
+// Estado del juego
+onValue(ref(db,'kahoot/preguntaActual'), snap => {
+  if (!snap.exists()) return;
+  const d = snap.val();
+  if (d.estado==='jugando') mostrarPregunta(d);
+  else if (d.estado==='resultado') mostrarResultado(d);
+  else if (d.estado==='final') mostrarFinal();
+  else if (d.estado==='espera') show('s-lobby');
+});
+
+// Contador respuestas en tiempo real
+onValue(ref(db,'kahoot/respuestas'), snap => {
+  const el = document.getElementById('respCnt');
+  if (!el || !snap.exists()) return;
+  // contar respuestas de la pregunta actual
+});
+
+function mostrarPregunta(d) {
+  show('s-pregunta');
+  clearInterval(timerIv);
+  document.getElementById('pregNum').textContent = `Pregunta ${d.num} de ${d.total}`;
+  document.getElementById('pregTxt').textContent = d.pregunta;
+
+  const colores = ['A','B','C','D'];
+  const iconos = ['🔴','🔵','🟢','🟡'];
+  document.getElementById('opcionesTv').innerHTML = (d.opciones||[]).map((op,i)=>
+    op ? `<div class="opcion-tv ${colores[i]}"><span class="letra-badge">${colores[i]}</span> ${op}</div>` : ''
+  ).join('');
+
+  // Timer
+  const fill = document.getElementById('timerFill');
+  const num = document.getElementById('timerNum');
+  fill.style.width='100%';
+  let seg = d.tiempo;
+  num.textContent = seg;
+  const inicio = Date.now();
+  timerIv = setInterval(()=>{
+    const elapsed = (Date.now()-inicio)/1000;
+    const pct = Math.max(0,100-(elapsed/d.tiempo*100));
+    fill.style.width=pct+'%';
+    num.textContent = Math.ceil(d.tiempo-elapsed);
+    if(pct<=0) clearInterval(timerIv);
+  },100);
+
+  // Respuestas en tiempo real
+  onValue(ref(db,`kahoot/respuestas/${d.num}`), snap=>{
+    const cnt = snap.exists() ? Object.keys(snap.val()).length : 0;
+    document.getElementById('respCnt').textContent = `${cnt} respuesta${cnt!==1?'s':''}`;
+  });
+}
+
+async function mostrarResultado(d) {
+  clearInterval(timerIv);
+  show('s-resultado');
+
+  // Marcar correcta/incorrecta en opciones
+  document.querySelectorAll('.opcion-tv').forEach(el=>{
+    const l = el.classList[1];
+    if(l===d.correcta) el.classList.add('correcta');
+    else el.classList.add('incorrecta');
+  });
+
+  const idx = ['A','B','C','D'].indexOf(d.correcta);
+  document.getElementById('resRespuesta').textContent =
+    `${d.correcta}: ${d.opciones && d.opciones[idx] ? d.opciones[idx] : ''}`;
+
+  // Top 5
+  const snap = await get(ref(db,'kahoot/jugadores'));
+  if (snap.exists()) {
+    const top = Object.values(snap.val()).sort((a,b)=>b.puntos-a.puntos).slice(0,5);
+    document.getElementById('podioTmp').innerHTML = top.map((j,i)=>
+      `<div class="podio-item ${i===0?'top':''}">
+        <div class="podio-pos">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</div>
+        <div class="podio-nick">${j.nick}</div>
+        <div class="podio-pts">${j.puntos} pts</div>
+      </div>`
+    ).join('');
+  }
+}
+
+async function mostrarFinal() {
+  clearInterval(timerIv);
+  show('s-final');
+  confeti();
+  const snap = await get(ref(db,'kahoot/jugadores'));
+  if (!snap.exists()) return;
+  const top = Object.values(snap.val()).sort((a,b)=>b.puntos-a.puntos).slice(0,3);
+  const clases = ['pf-1','pf-2','pf-3'];
+  const emojis = ['🥇','🥈','🥉'];
+  document.getElementById('podioFinal').innerHTML = top.map((j,i)=>
+    `<div class="pf-item ${clases[i]}">
+      <div class="pf-pos">${emojis[i]||'🏅'}</div>
+      <div class="pf-nick">${j.nick}</div>
+      <div class="pf-pts">${j.puntos} pts</div>
+    </div>`
+  ).join('');
+}
+
+function confeti(){
+  const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+  cv.width=innerWidth;cv.height=innerHeight;cv.classList.add('show');
+  const cols=['#6366f1','#a855f7','#ec4899','#fbbf24','#34d399','#fff'];
+  const pz=Array.from({length:180},()=>({x:Math.random()*innerWidth,y:-20,w:6+Math.random()*10,h:6+Math.random()*10,c:cols[~~(Math.random()*cols.length)],s:3+Math.random()*4,r:Math.random()*360,sp:Math.random()*8-4}));
+  let fr=0;
+  function draw(){ctx.clearRect(0,0,cv.width,cv.height);pz.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();p.y+=p.s;p.r+=p.sp;if(p.y>cv.height)p.y=-20});fr++;if(fr<300)requestAnimationFrame(draw);else{ctx.clearRect(0,0,cv.width,cv.height);cv.classList.remove('show')}}
+  draw();
+}
+</script>
+</body>
+</html>
