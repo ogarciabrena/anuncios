@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Kahoot</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0020;color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;padding:1.5rem}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:1.6rem;font-weight:800;margin-bottom:.2rem}
+h1 span{background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#555;font-size:.85rem;margin-bottom:1.5rem}
+
+/* Login */
+#s-login{text-align:center;padding-top:3rem}
+#s-login input{width:100%;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:12px;color:#fff;padding:14px;font-size:1rem;font-family:inherit;outline:none;text-align:center;margin-bottom:1rem}
+#s-login input:focus{border-color:#6366f1}
+
+/* Panel */
+#s-panel{display:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-bottom:1.5rem}
+.stat{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:1rem;text-align:center}
+.stat .val{font-size:2rem;font-weight:900;color:#6366f1}
+.stat .lbl{font-size:.75rem;color:#555;margin-top:.2rem}
+
+.btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:.7rem;transition:all .2s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);color:#fff}
+.btn-yellow{background:linear-gradient(135deg,#d97706,#f59e0b);color:#000}
+.btn-red{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b}
+.btn-ghost{background:#1a1a2e;border:1px solid #2a2a4a;color:#888}
+
+/* Pregunta actual */
+.preg-card{background:#0d0015;border:1px solid #2a2a4a;border-radius:14px;padding:1.2rem;margin-bottom:1rem}
+.preg-card .label{font-size:.75rem;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+.preg-card .txt{font-size:1rem;font-weight:600;margin-bottom:.8rem}
+.opciones-mini{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.op-mini{padding:.5rem .7rem;border-radius:8px;font-size:.82rem;display:flex;align-items:center;gap:.4rem}
+.op-mini.A{background:#e74c3c33;border:1px solid #e74c3c55}
+.op-mini.B{background:#3498db33;border:1px solid #3498db55}
+.op-mini.C{background:#2ecc7133;border:1px solid #2ecc7155}
+.op-mini.D{background:#f39c1233;border:1px solid #f39c1255}
+.op-mini.correcta{box-shadow:0 0 0 2px #fff}
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:999px;font-size:.75rem;font-weight:600;margin-bottom:.8rem}
+.badge-espera{background:#1a1a2e;color:#555;border:1px solid #2a2a4a}
+.badge-jugando{background:#6366f122;color:#6366f1;border:1px solid #6366f144}
+.badge-resultado{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.badge-final{background:#10b98122;color:#10b981;border:1px solid #10b98144}
+
+/* Editor preguntas */
+.editor-toggle{color:#6366f1;font-size:.85rem;cursor:pointer;margin-bottom:1rem;display:block;text-align:center}
+#editor-pregs{display:none}
+.preg-edit{background:#0d0015;border:1px solid #2a2a4a;border-radius:12px;padding:1rem;margin-bottom:.8rem}
+.preg-edit .pe-num{font-size:.75rem;color:#555;margin-bottom:.5rem}
+.preg-edit input,.preg-edit select{width:100%;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:#fff;padding:8px 10px;font-size:.85rem;font-family:inherit;outline:none;margin-bottom:.5rem}
+.preg-edit .ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.correcta-sel{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+.correcta-sel label{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:.3rem .8rem;cursor:pointer;font-size:.82rem}
+.correcta-sel input[type=radio]{display:none}
+.correcta-sel input:checked+span{color:#6366f1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Login -->
+  <div id="s-login">
+    <h1>🔐 Admin <span>Kahoot</span></h1>
+    <p class="sub" style="margin-bottom:2rem">Acceso exclusivo</p>
+    <input type="password" id="passInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-primary" onclick="login()">Entrar</button>
+    <p id="errLogin" style="color:#ef4444;font-size:.85rem;margin-top:.5rem;min-height:1rem"></p>
+  </div>
+
+  <!-- Panel -->
+  <div id="s-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
+      <h1>⚡ <span>Admin Kahoot</span></h1>
+      <span id="badgeEstado" class="badge badge-espera">En espera</span>
+    </div>
+    <p class="sub">Controla el juego desde aquí</p>
+
+    <div class="stats">
+      <div class="stat"><div class="val" id="cntJug">0</div><div class="lbl">Jugadores</div></div>
+      <div class="stat"><div class="val" id="cntPreg">0</div><div class="lbl">Pregunta</div></div>
+      <div class="stat"><div class="val" id="cntResp">0</div><div class="lbl">Resp.</div></div>
+    </div>
+
+    <!-- Pregunta actual -->
+    <div class="preg-card" id="pregCard" style="display:none">
+      <div class="label">Pregunta actual</div>
+      <div class="txt" id="pcTxt"></div>
+      <div class="opciones-mini" id="pcOps"></div>
+    </div>
+
+    <!-- Botones control -->
+    <button class="btn btn-green" id="btnIniciar" onclick="iniciarJuego()">▶️ Iniciar juego</button>
+    <button class="btn btn-yellow" id="btnSiguiente" onclick="siguientePregunta()" style="display:none">⏭️ Siguiente pregunta</button>
+    <button class="btn btn-yellow" id="btnResultado" onclick="mostrarResultado()" style="display:none">✅ Mostrar resultado</button>
+    <button class="btn btn-primary" id="btnFinal" onclick="terminarJuego()" style="display:none">🏁 Terminar juego</button>
+    <button class="btn btn-red" onclick="resetJuego()">↺ Reiniciar todo</button>
+    <button class="btn btn-ghost" onclick="logout()" style="font-size:.82rem;padding:10px">Cerrar sesión</button>
+
+    <!-- Editor preguntas -->
+    <span class="editor-toggle" onclick="toggleEditor()">✏️ Editar preguntas del juego</span>
+    <div id="editor-pregs"></div>
+    <button class="btn btn-primary" id="btnGuardar" onclick="guardarPreguntas()" style="display:none">💾 Guardar preguntas</button>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const PASS = 'kahoot2026';
+const app = initializeApp({
+  apiKey: "AIzaSyAhPB0i7phzAa9XMLsCpzFMFr7khWIhCNM",
+  authDomain: "anuncios-ogb.firebaseapp.com",
+  databaseURL: "https://anuncios-ogb-default-rtdb.firebaseio.com",
+  projectId: "anuncios-ogb",
+  storageBucket: "anuncios-ogb.firebasestorage.app",
+  messagingSenderId: "22034025245",
+  appId: "1:22034025245:web:26a1fbef1b025a46b9eff4"
+});
+const db = getDatabase(app);
+
+let preguntaIdx = 0;
+let preguntas = [
+  { pregunta:'¿Cuántos estados tiene México?', opciones:['31','32','30','33'], correcta:'B', tiempo:20 },
+  { pregunta:'¿En qué año fue fundada Oaxaca de Juárez?', opciones:['1521','1486','1532','1550'], correcta:'B', tiempo:20 },
+  { pregunta:'¿Cuál es el platillo típico de Oaxaca?', opciones:['Pozole','Mole negro','Tacos','Birria'], correcta:'B', tiempo:15 },
+  { pregunta:'¿Cuántos municipios tiene Oaxaca?', opciones:['418','570','320','600'], correcta:'B', tiempo:20 },
+];
+
+window.login = function() {
+  if (document.getElementById('passInput').value === PASS) {
+    document.getElementById('s-login').style.display='none';
+    document.getElementById('s-panel').style.display='block';
+    sessionStorage.setItem('kadmin','1');
+    iniciarPanel();
+  } else {
+    document.getElementById('errLogin').textContent='Contraseña incorrecta';
+  }
+}
+window.logout = function(){ sessionStorage.removeItem('kadmin'); location.reload(); }
+
+function iniciarPanel() {
+  renderEditorPreguntas();
+  onValue(ref(db,'kahoot/jugadores'), snap=>{
+    document.getElementById('cntJug').textContent = snap.exists()?Object.keys(snap.val()).length:0;
+  });
+  onValue(ref(db,'kahoot/preguntaActual'), snap=>{
+    if (!snap.exists()) return;
+    const d = snap.val();
+    actualizarUI(d);
+    if (d.num) document.getElementById('cntPreg').textContent = `${d.num}/${preguntas.length}`;
+    if (d.estado==='jugando') {
+      onValue(ref(db,`kahoot/respuestas/${d.num}`), s=>{
+        document.getElementById('cntResp').textContent = s.exists()?Object.keys(s.val()).length:0;
+      });
+    }
+  });
+}
+
+function actualizarUI(d) {
+  const badge = document.getElementById('badgeEstado');
+  const btnI = document.getElementById('btnIniciar');
+  const btnS = document.getElementById('btnSiguiente');
+  const btnR = document.getElementById('btnResultado');
+  const btnF = document.getElementById('btnFinal');
+  const card = document.getElementById('pregCard');
+
+  const hide = el => el.style.display='none';
+  const show = el => el.style.display='block';
+
+  if (d.estado==='espera'||!d.estado) {
+    badge.className='badge badge-espera'; badge.textContent='En espera';
+    show(btnI); hide(btnS); hide(btnR); hide(btnF); hide(card);
+  } else if (d.estado==='jugando') {
+    badge.className='badge badge-jugando'; badge.textContent='Jugando...';
+    hide(btnI); hide(btnS); show(btnR); hide(btnF); show(card);
+    renderPregCard(d);
+  } else if (d.estado==='resultado') {
+    badge.className='badge badge-resultado'; badge.textContent='Mostrando resultado';
+    hide(btnI);
+    const esUltima = d.num >= preguntas.length;
+    esUltima ? show(btnF) : show(btnS);
+    hide(btnR); hide(btnF);
+    if (esUltima) show(btnF); else { show(btnS); hide(btnF); }
+    show(card);
+  } else if (d.estado==='final') {
+    badge.className='badge badge-final'; badge.textContent='Juego terminado';
+    hide(btnI); hide(btnS); hide(btnR); hide(btnF); hide(card);
+  }
+}
+
+function renderPregCard(d) {
+  document.getElementById('pcTxt').textContent = d.pregunta;
+  const letras=['A','B','C','D'];
+  document.getElementById('pcOps').innerHTML = (d.opciones||[]).map((op,i)=>
+    op?`<div class="op-mini ${letras[i]} ${letras[i]===d.correcta?'correcta':''}">${letras[i]}: ${op}</div>`:''
+  ).join('');
+}
+
+window.iniciarJuego = async function() {
+  preguntaIdx = 0;
+  await remove(ref(db,'kahoot/respuestas'));
+  await set(ref(db,'kahoot/estado'),'jugando');
+  await lanzarPregunta(0);
+}
+
+async function lanzarPregunta(idx) {
+  const p = preguntas[idx];
+  if (!p) return;
+  await set(ref(db,'kahoot/preguntaActual'), {
+    estado:'jugando', num:idx+1, total:preguntas.length,
+    pregunta:p.pregunta, opciones:p.opciones, correcta:p.correcta, tiempo:p.tiempo,
+    ts: Date.now()
+  });
+  preguntaIdx = idx;
+}
+
+window.mostrarResultado = async function() {
+  const p = preguntas[preguntaIdx];
+  await set(ref(db,'kahoot/preguntaActual/estado'),'resultado');
+  await set(ref(db,'kahoot/preguntaActual/num'), preguntaIdx+1);
+}
+
+window.siguientePregunta = async function() {
+  preguntaIdx++;
+  if (preguntaIdx < preguntas.length) {
+    await lanzarPregunta(preguntaIdx);
+  }
+}
+
+window.terminarJuego = async function() {
+  await set(ref(db,'kahoot/preguntaActual'), { estado:'final', ts:Date.now() });
+  await set(ref(db,'kahoot/estado'),'final');
+}
+
+window.resetJuego = async function() {
+  if (!confirm('¿Reiniciar todo el juego?')) return;
+  await remove(ref(db,'kahoot'));
+  preguntaIdx = 0;
+  document.getElementById('cntJug').textContent='0';
+  document.getElementById('cntPreg').textContent='0';
+  document.getElementById('cntResp').textContent='0';
+}
+
+// ── Editor preguntas ──────────────────────────────────────────────────────
+window.toggleEditor = function() {
+  const ed = document.getElementById('editor-pregs');
+  const btn = document.getElementById('btnGuardar');
+  const visible = ed.style.display==='block';
+  ed.style.display = visible?'none':'block';
+  btn.style.display = visible?'none':'block';
+}
+
+function renderEditorPreguntas() {
+  const letras=['A','B','C','D'];
+  document.getElementById('editor-pregs').innerHTML = preguntas.map((p,i)=>`
+    <div class="preg-edit">
+      <div class="pe-num">Pregunta ${i+1}</div>
+      <input id="pq${i}" value="${p.pregunta}" placeholder="Pregunta">
+      <div class="ops-grid">
+        ${p.opciones.map((op,j)=>`<input id="po${i}_${j}" value="${op}" placeholder="Opción ${letras[j]}">`).join('')}
+      </div>
+      <div style="font-size:.75rem;color:#555;margin-bottom:.3rem">Respuesta correcta:</div>
+      <div class="correcta-sel">
+        ${letras.map(l=>`<label><input type="radio" name="pc${i}" value="${l}" ${p.correcta===l?'checked':''}><span>${l}</span></label>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.75rem;color:#555">Tiempo:</span>
+        <input id="pt${i}" value="${p.tiempo}" style="width:60px" type="number" min="5" max="60">
+        <span style="font-size:.75rem;color:#555">seg</span>
+      </div>
+    </div>`).join('');
+}
+
+window.guardarPreguntas = function() {
+  const letras=['A','B','C','D'];
+  preguntas = preguntas.map((p,i)=>({
+    pregunta: document.getElementById(`pq${i}`).value,
+    opciones: letras.map((_,j)=>document.getElementById(`po${i}_${j}`).value),
+    correcta: document.querySelector(`input[name="pc${i}"]:checked`)?.value||'A',
+    tiempo: parseInt(document.getElementById(`pt${i}`).value)||20
+  }));
+  alert('✅ Preguntas guardadas para esta sesión');
+  toggleEditor();
+}
+
+if (sessionStorage.getItem('kadmin')==='1') {
+  document.getElementById('s-login').style.display='none';
+  document.getElementById('s-panel').style.display='block';
+  iniciarPanel();
+}
+</script>
+</body>
+</html>
