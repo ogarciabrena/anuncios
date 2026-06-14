@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rifa</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0010;--accent:#a855f7;--gold:#fbbf24}
+body{background:var(--bg);color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center;overflow:hidden}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .5s}
+canvas.show{opacity:1}
+.wrap{position:relative;z-index:1;width:100%;max-width:480px}
+
+/* ── Pantalla registro ── */
+#screen-registro h1{font-size:2.2rem;font-weight:900;margin-bottom:.3rem}
+#screen-registro h1 span{background:linear-gradient(135deg,var(--accent),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#screen-registro p{color:#888;margin-bottom:2rem;font-size:.95rem}
+.input-wrap{position:relative;margin-bottom:1rem}
+.input-wrap input{width:100%;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:14px;color:#fff;padding:16px 20px;font-size:1.1rem;font-family:inherit;outline:none;transition:border-color .2s;text-align:center}
+.input-wrap input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:1.1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff}
+.btn-primary:active{transform:scale(.97)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.nota{margin-top:1rem;color:#555;font-size:.8rem}
+
+/* ── Pantalla folio ── */
+#screen-folio{display:none}
+#screen-folio .folio-box{background:linear-gradient(135deg,#1a0a2e,#0d001a);border:2px solid var(--accent);border-radius:20px;padding:2rem;margin:1.5rem 0}
+#screen-folio .label{color:#888;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+#screen-folio .folio-num{font-size:4rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+#screen-folio .nombre-conf{font-size:1.1rem;color:#ccc;margin-top:.5rem}
+#screen-folio .instruccion{color:#666;font-size:.88rem;line-height:1.5;margin-top:1rem}
+.badge-espera{display:inline-block;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:999px;padding:.4rem 1.2rem;font-size:.82rem;color:#888;margin-top:1.5rem}
+
+/* ── Pantalla sorteo (TV) ── */
+#screen-sorteo{display:none}
+#screen-sorteo h2{font-size:1.5rem;color:#888;margin-bottom:1rem;font-weight:400}
+.tambor{width:200px;height:200px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#0d001a);border:4px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;position:relative;overflow:hidden}
+.tambor .num-roll{font-size:3.5rem;font-weight:900;color:var(--gold);transition:opacity .05s}
+.tambor::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.15),transparent 70%)}
+.btn-sortear{background:linear-gradient(135deg,var(--gold),#f97316);color:#000;font-size:1.3rem;padding:18px 3rem;border-radius:16px;margin-bottom:1rem;width:auto;display:inline-block}
+.ganador-box{display:none;background:linear-gradient(135deg,#1a1000,#0a0800);border:2px solid var(--gold);border-radius:20px;padding:2rem;margin-top:1.5rem;animation:aparecer .5s ease}
+@keyframes aparecer{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.ganador-box .g-label{color:var(--gold);font-size:.85rem;letter-spacing:.1em;text-transform:uppercase}
+.ganador-box .g-num{font-size:5rem;font-weight:900;color:var(--gold);line-height:1}
+.ganador-box .g-nombre{font-size:1.8rem;font-weight:700;color:#fff;margin-top:.3rem}
+
+/* ── Toggle modo TV ── */
+.modo-tv{position:fixed;top:14px;right:14px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:6px 12px;font-size:11px;color:#666;cursor:pointer;z-index:10}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="modo-tv" onclick="toggleModo()">📺 Modo Sorteo</button>
+
+<div class="wrap">
+
+  <!-- Registro participante -->
+  <div id="screen-registro">
+    <h1>🎟️ <span>Rifa</span></h1>
+    <p id="desc-rifa">Ingresa tu nombre para participar</p>
+    <div class="input-wrap">
+      <input id="inputNombre" type="text" placeholder="Tu nombre completo" maxlength="40"
+        onkeydown="if(event.key==='Enter')registrar()">
+    </div>
+    <button class="btn btn-primary" id="btnRegistrar" onclick="registrar()">Obtener mi folio 🎟️</button>
+    <p class="nota">Guarda captura de tu folio como comprobante</p>
+  </div>
+
+  <!-- Folio asignado -->
+  <div id="screen-folio">
+    <h1 style="font-size:1.6rem;color:#888;font-weight:400">¡Estás participando!</h1>
+    <div class="folio-box">
+      <div class="label">Tu número de folio</div>
+      <div class="folio-num" id="folioNum">—</div>
+      <div class="nombre-conf" id="folioNombre"></div>
+    </div>
+    <p class="instruccion">📸 Toma captura de pantalla como comprobante.<br>Si tu número es el ganador, preséntalo.</p>
+    <div class="badge-espera">⏳ Espera el sorteo en vivo</div>
+  </div>
+
+  <!-- Sorteo (modo TV) -->
+  <div id="screen-sorteo">
+    <h2>🎰 Sorteo en vivo</h2>
+    <div class="tambor"><div class="num-roll" id="numRoll">?</div></div>
+    <br>
+    <button class="btn btn-sortear" id="btnSortear" onclick="sortear()">🎲 ¡Sortear!</button>
+    <div class="ganador-box" id="ganadorBox">
+      <div class="g-label">🏆 ¡Ganador!</div>
+      <div class="g-num" id="gNum"></div>
+      <div class="g-nombre" id="gNombre">Folio ganador</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+// Para personalizar: cambia estos valores
+const CONFIG = {
+  titulo: 'Rifa Especial',
+  descripcion: 'Ingresa tu nombre para participar y obtén tu folio único',
+  premio: '¡Premio sorpresa!',
+  rangoMin: 100,
+  rangoMax: 999,
+};
+
+let modoTV = false;
+
+// ── Generar folio único basado en tiempo + random ───────────────────────────
+function generarFolio() {
+  const t = Date.now();
+  const r = Math.floor(Math.random() * 900) + 100;
+  // Combina últimos 3 dígitos del timestamp con random para unicidad
+  const base = ((t % 900) + r) % (CONFIG.rangoMax - CONFIG.rangoMin + 1) + CONFIG.rangoMin;
+  return String(base).padStart(3, '0');
+}
+
+// ── Registro ─────────────────────────────────────────────────────────────────
+function registrar() {
+  const nombre = document.getElementById('inputNombre').value.trim();
+  if (!nombre) {
+    document.getElementById('inputNombre').style.borderColor = '#ef4444';
+    setTimeout(() => document.getElementById('inputNombre').style.borderColor = '#2a2a4a', 1000);
+    return;
+  }
+  const folio = generarFolio();
+  document.getElementById('folioNum').textContent = folio;
+  document.getElementById('folioNombre').textContent = nombre;
+  document.getElementById('screen-registro').style.display = 'none';
+  document.getElementById('screen-folio').style.display = 'block';
+  // Guardar en localStorage para referencia
+  try {
+    localStorage.setItem('rifa_folio', JSON.stringify({ nombre, folio, ts: Date.now() }));
+  } catch(e) {}
+}
+
+// ── Modo TV / Sorteo ─────────────────────────────────────────────────────────
+function toggleModo() {
+  modoTV = !modoTV;
+  document.getElementById('screen-registro').style.display = modoTV ? 'none' : 'block';
+  document.getElementById('screen-folio').style.display = 'none';
+  document.getElementById('screen-sorteo').style.display = modoTV ? 'block' : 'none';
+  document.querySelector('.modo-tv').textContent = modoTV ? '👤 Modo Registro' : '📺 Modo Sorteo';
+  if (modoTV) {
+    document.getElementById('ganadorBox').style.display = 'none';
+    document.getElementById('numRoll').textContent = '?';
+  }
+}
+
+// ── Animación del tambor ─────────────────────────────────────────────────────
+let sorteando = false;
+function sortear() {
+  if (sorteando) return;
+  sorteando = true;
+  document.getElementById('btnSortear').disabled = true;
+  document.getElementById('ganadorBox').style.display = 'none';
+
+  const total = 80; // frames de animación
+  let frame = 0;
+  const roll = document.getElementById('numRoll');
+  const ganador = String(Math.floor(Math.random() * (CONFIG.rangoMax - CONFIG.rangoMin + 1)) + CONFIG.rangoMin).padStart(3,'0');
+
+  const intervalo = setInterval(() => {
+    frame++;
+    // Velocidad: rápido al inicio, lento al final
+    const delay = frame < 40 ? 50 : frame < 65 ? 100 : 200;
+    const num = String(Math.floor(Math.random() * (CONFIG.rangoMax - CONFIG.rangoMin + 1)) + CONFIG.rangoMin).padStart(3,'0');
+    roll.textContent = num;
+
+    if (frame >= total) {
+      clearInterval(intervalo);
+      roll.textContent = ganador;
+      mostrarGanador(ganador);
+    }
+  }, 60);
+}
+
+function mostrarGanador(num) {
+  document.getElementById('gNum').textContent = num;
+  document.getElementById('ganadorBox').style.display = 'block';
+  lanzarConfeti();
+  setTimeout(() => {
+    sorteando = false;
+    document.getElementById('btnSortear').disabled = false;
+    document.getElementById('btnSortear').textContent = '🔄 Sortear de nuevo';
+  }, 4000);
+}
+
+// ── Confeti ──────────────────────────────────────────────────────────────────
+function lanzarConfeti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  canvas.classList.add('show');
+  const cols = ['#a855f7','#fbbf24','#f472b6','#34d399','#60a5fa','#fff'];
+  const pz = Array.from({length:150}, () => ({
+    x: Math.random()*innerWidth, y: -20,
+    w: 6+Math.random()*10, h: 6+Math.random()*10,
+    c: cols[Math.floor(Math.random()*cols.length)],
+    s: 3+Math.random()*4, r: Math.random()*360, sp: Math.random()*8-4
+  }));
+  let frames = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pz.forEach(p => {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r*Math.PI/180);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      p.y+=p.s; p.r+=p.sp; p.x+=Math.sin(frames/20)*1.5;
+      if(p.y>innerHeight) p.y=-20;
+    });
+    frames++;
+    if(frames<200) requestAnimationFrame(draw);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.classList.remove('show'); }
+  }
+  draw();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('desc-rifa').textContent = CONFIG.descripcion;
+document.querySelector('title').textContent = CONFIG.titulo;
+// Restaurar folio si ya participó
+try {
+  const prev = JSON.parse(localStorage.getItem('rifa_folio')||'null');
+  if(prev && Date.now()-prev.ts < 86400000) { // válido 24h
+    document.getElementById('folioNum').textContent = prev.folio;
+    document.getElementById('folioNombre').textContent = prev.nombre;
+    document.getElementById('screen-registro').style.display = 'none';
+    document.getElementById('screen-folio').style.display = 'block';
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
