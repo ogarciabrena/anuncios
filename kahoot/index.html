@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kahoot — Jugar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0020;color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.wrap{width:100%;max-width:420px;text-align:center}
+
+/* Unirse */
+#s-join h1{font-size:2.2rem;font-weight:900;margin-bottom:.3rem}
+#s-join h1 span{background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#s-join p{color:#666;font-size:.95rem;margin-bottom:2rem}
+input{width:100%;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:14px;color:#fff;padding:15px 20px;font-size:1.1rem;font-family:inherit;outline:none;text-align:center;transition:border-color .2s;margin-bottom:.8rem}
+input:focus{border-color:#6366f1}
+.btn{width:100%;padding:15px;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-join{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff}
+.err{color:#ef4444;font-size:.85rem;min-height:1.2rem;margin-bottom:.5rem}
+
+/* Espera */
+#s-espera{display:none;text-align:center}
+.avatar{font-size:4rem;margin-bottom:1rem}
+.nick{font-size:1.5rem;font-weight:700;margin-bottom:.3rem}
+.espera-txt{color:#666;font-size:.9rem}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Pregunta */
+#s-pregunta{display:none}
+.timer-bar{height:6px;background:#1a1a2e;border-radius:3px;margin-bottom:1.2rem;overflow:hidden}
+.timer-fill{height:100%;background:linear-gradient(90deg,#6366f1,#ec4899);border-radius:3px;transition:width 1s linear}
+.num-preg{font-size:.8rem;color:#666;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em}
+.pregunta-txt{font-size:1.2rem;font-weight:700;margin-bottom:1.5rem;line-height:1.4;min-height:60px}
+.opciones{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.opcion{padding:1.2rem .8rem;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;transition:transform .1s;active:transform:scale(.95)}
+.opcion:disabled{cursor:not-allowed;opacity:.5}
+.opcion.A{background:#e74c3c}
+.opcion.B{background:#3498db}
+.opcion.C{background:#2ecc71}
+.opcion.D{background:#f39c12}
+.opcion.correcta{box-shadow:0 0 0 3px #fff;transform:scale(1.05)}
+.opcion.incorrecta{opacity:.3}
+
+/* Resultado pregunta */
+#s-resultado{display:none;text-align:center}
+.resultado-icon{font-size:4rem;margin-bottom:.5rem}
+.resultado-txt{font-size:1.3rem;font-weight:700;margin-bottom:.3rem}
+.puntos-ganados{font-size:1rem;color:#fbbf24;margin-bottom.5rem}
+.total-puntos{font-size:.85rem;color:#666}
+
+/* Final */
+#s-final{display:none;text-align:center}
+.podio-personal{background:linear-gradient(135deg,#1a0a2e,#0d001a);border:2px solid #6366f1;border-radius:20px;padding:2rem;margin:1.5rem 0}
+.pos-num{font-size:4rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pos-txt{color:#888;font-size:.9rem}
+.puntos-final{font-size:2rem;font-weight:700;color:#6366f1;margin-top:.5rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Unirse -->
+  <div id="s-join">
+    <h1>⚡ <span>Kahoot</span></h1>
+    <p>Ingresa tu nombre para jugar</p>
+    <input id="nickInput" type="text" placeholder="Tu nombre / apodo" maxlength="20"
+      onkeydown="if(event.key==='Enter')unirse()">
+    <div class="err" id="err"></div>
+    <button class="btn btn-join" onclick="unirse()">¡Entrar al juego! 🎮</button>
+  </div>
+
+  <!-- Espera -->
+  <div id="s-espera">
+    <div class="avatar">🎮</div>
+    <div class="nick" id="nickMostrar"></div>
+    <p class="espera-txt pulse">Esperando que el admin inicie el juego...</p>
+  </div>
+
+  <!-- Pregunta -->
+  <div id="s-pregunta">
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="num-preg" id="numPreg"></div>
+    <div class="pregunta-txt" id="pregTxt"></div>
+    <div class="opciones">
+      <button class="opcion A" onclick="responder('A')">A</button>
+      <button class="opcion B" onclick="responder('B')">B</button>
+      <button class="opcion C" onclick="responder('C')">C</button>
+      <button class="opcion D" onclick="responder('D')">D</button>
+    </div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="s-resultado">
+    <div class="resultado-icon" id="resIcon"></div>
+    <div class="resultado-txt" id="resTxt"></div>
+    <div class="puntos-ganados" id="puntosGanados"></div>
+    <div class="total-puntos" id="totalPuntos"></div>
+  </div>
+
+  <!-- Final -->
+  <div id="s-final">
+    <h1 style="font-size:1.8rem;margin-bottom:.3rem">🏁 ¡Juego terminado!</h1>
+    <p style="color:#666;margin-bottom:1rem">Tu resultado final</p>
+    <div class="podio-personal">
+      <div class="pos-num" id="posNum">#—</div>
+      <div class="pos-txt">Tu posición</div>
+      <div class="puntos-final" id="puntosFinales">0 pts</div>
+    </div>
+    <p style="color:#555;font-size:.85rem">Mira el podio en la pantalla grande 📺</p>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAhPB0i7phzAa9XMLsCpzFMFr7khWIhCNM",
+  authDomain: "anuncios-ogb.firebaseapp.com",
+  databaseURL: "https://anuncios-ogb-default-rtdb.firebaseio.com",
+  projectId: "anuncios-ogb",
+  storageBucket: "anuncios-ogb.firebasestorage.app",
+  messagingSenderId: "22034025245",
+  appId: "1:22034025245:web:26a1fbef1b025a46b9eff4"
+});
+const db = getDatabase(app);
+
+let jugadorId = null;
+let nick = '';
+let puntos = 0;
+let preguntaActual = null;
+let respondio = false;
+let timerInterval = null;
+let tiempoInicio = null;
+
+function show(id) {
+  ['s-join','s-espera','s-pregunta','s-resultado','s-final'].forEach(s =>
+    document.getElementById(s).style.display = s===id ? 'block' : 'none');
+}
+
+window.unirse = async function() {
+  nick = document.getElementById('nickInput').value.trim();
+  if (!nick) { document.getElementById('err').textContent = 'Escribe tu nombre'; return; }
+  document.getElementById('err').textContent = '';
+
+  // Verificar que el juego esté abierto
+  const snap = await get(ref(db,'kahoot/estado'));
+  const estado = snap.exists() ? snap.val() : 'cerrado';
+  if (estado === 'jugando') { document.getElementById('err').textContent = 'El juego ya inició, espera el siguiente'; return; }
+
+  const jRef = await push(ref(db,'kahoot/jugadores'), { nick, puntos: 0, ts: Date.now() });
+  jugadorId = jRef.key;
+  document.getElementById('nickMostrar').textContent = nick;
+  show('s-espera');
+  escucharJuego();
+}
+
+function escucharJuego() {
+  onValue(ref(db,'kahoot/preguntaActual'), snap => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+
+    if (data.estado === 'jugando') {
+      mostrarPregunta(data);
+    } else if (data.estado === 'resultado') {
+      mostrarResultado(data);
+    } else if (data.estado === 'final') {
+      mostrarFinal();
+    } else if (data.estado === 'espera') {
+      show('s-espera');
+    }
+  });
+}
+
+function mostrarPregunta(data) {
+  preguntaActual = data;
+  respondio = false;
+  tiempoInicio = Date.now();
+  show('s-pregunta');
+  document.getElementById('numPreg').textContent = `Pregunta ${data.num} de ${data.total}`;
+  document.getElementById('pregTxt').textContent = data.pregunta;
+
+  // Mostrar solo opciones disponibles
+  const letras = ['A','B','C','D'];
+  letras.forEach((l,i) => {
+    const btn = document.querySelector(`.opcion.${l}`);
+    btn.textContent = data.opciones[i] ? `${l}  ${data.opciones[i]}` : l;
+    btn.disabled = !data.opciones[i];
+    btn.style.opacity = data.opciones[i] ? '1' : '0.1';
+    btn.className = `opcion ${l}`;
+  });
+
+  // Timer visual
+  clearInterval(timerInterval);
+  const duracion = data.tiempo * 1000;
+  const fill = document.getElementById('timerFill');
+  fill.style.width = '100%';
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - tiempoInicio;
+    const pct = Math.max(0, 100 - (elapsed/duracion*100));
+    fill.style.width = pct + '%';
+    if (pct <= 0) clearInterval(timerInterval);
+  }, 100);
+}
+
+window.responder = async function(letra) {
+  if (respondio || !jugadorId) return;
+  respondio = true;
+  clearInterval(timerInterval);
+
+  const elapsed = (Date.now() - tiempoInicio) / 1000;
+  const correcto = letra === preguntaActual.correcta;
+  const tiempoPts = correcto ? Math.max(100, Math.round(1000 * (1 - elapsed/preguntaActual.tiempo))) : 0;
+
+  // Deshabilitar botones y marcar
+  ['A','B','C','D'].forEach(l => {
+    const btn = document.querySelector(`.opcion.${l}`);
+    btn.disabled = true;
+    if (l === letra) btn.classList.add(correcto ? 'correcta' : 'incorrecta');
+  });
+
+  // Guardar respuesta
+  await set(ref(db,`kahoot/respuestas/${preguntaActual.num}/${jugadorId}`), {
+    nick, letra, correcto, pts: tiempoPts, ts: Date.now()
+  });
+
+  // Actualizar puntos localmente
+  if (correcto) {
+    puntos += tiempoPts;
+    await set(ref(db,`kahoot/jugadores/${jugadorId}/puntos`), puntos);
+  }
+}
+
+function mostrarResultado(data) {
+  clearInterval(timerInterval);
+  show('s-resultado');
+  // Ver si respondió bien
+  get(ref(db,`kahoot/respuestas/${data.num}/${jugadorId}`)).then(snap => {
+    if (snap.exists() && snap.val().correcto) {
+      document.getElementById('resIcon').textContent = '✅';
+      document.getElementById('resTxt').textContent = '¡Correcto!';
+      document.getElementById('puntosGanados').textContent = `+${snap.val().pts} puntos`;
+    } else if (snap.exists()) {
+      document.getElementById('resIcon').textContent = '❌';
+      document.getElementById('resTxt').textContent = `Era: ${data.correcta} — ${data.opciones[['A','B','C','D'].indexOf(data.correcta)]}`;
+      document.getElementById('puntosGanados').textContent = '+0 puntos';
+    } else {
+      document.getElementById('resIcon').textContent = '⏱️';
+      document.getElementById('resTxt').textContent = 'Tiempo agotado';
+      document.getElementById('puntosGanados').textContent = '+0 puntos';
+    }
+    document.getElementById('totalPuntos').textContent = `Total: ${puntos} puntos`;
+  });
+}
+
+async function mostrarFinal() {
+  show('s-final');
+  // Calcular posición
+  const snap = await get(ref(db,'kahoot/jugadores'));
+  if (snap.exists()) {
+    const todos = Object.values(snap.val()).sort((a,b)=>b.puntos-a.puntos);
+    const pos = todos.findIndex(j=>j.nick===nick) + 1;
+    document.getElementById('posNum').textContent = `#${pos}`;
+    document.getElementById('puntosFinales').textContent = `${puntos} pts`;
+  }
+}
+</script>
+</body>
+</html>
