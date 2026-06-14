@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Rifa</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0010;color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;padding:1.5rem}
+.wrap{max-width:500px;margin:0 auto}
+h1{font-size:1.6rem;font-weight:800;margin-bottom:.2rem}
+h1 span{background:linear-gradient(135deg,#a855f7,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#555;font-size:.85rem;margin-bottom:2rem}
+
+/* Login */
+#screen-login{text-align:center;padding-top:4rem}
+#screen-login input{width:100%;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:12px;color:#fff;padding:14px;font-size:1rem;font-family:inherit;outline:none;text-align:center;margin-bottom:1rem}
+#screen-login input:focus{border-color:#a855f7}
+
+/* Panel */
+#screen-panel{display:none}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.stat{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:14px;padding:1.2rem;text-align:center}
+.stat .val{font-size:2.5rem;font-weight:900;color:#a855f7}
+.stat .lbl{font-size:.8rem;color:#666;margin-top:.2rem}
+
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:.8rem;transition:all .2s}
+.btn-sortear{background:linear-gradient(135deg,#fbbf24,#f97316);color:#000;font-size:1.1rem;padding:16px}
+.btn-sortear:disabled{opacity:.4;cursor:not-allowed}
+.btn-reset{background:#1a1a2e;border:1px solid #2a2a4a;color:#888}
+.btn-logout{background:transparent;border:1px solid #2a2a4a;color:#555;font-size:.85rem;padding:10px}
+
+/* Lista */
+.lista-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.lista-header span{font-size:.8rem;color:#555;text-transform:uppercase;letter-spacing:.08em}
+.lista{background:#0d0015;border:1px solid #1a1a2e;border-radius:12px;max-height:280px;overflow-y:auto}
+.lista::-webkit-scrollbar{width:4px}
+.lista::-webkit-scrollbar-thumb{background:#2a2a4a;border-radius:2px}
+.participante{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #1a1a2e}
+.participante:last-child{border-bottom:none}
+.p-nombre{font-size:.95rem}
+.p-folio{font-size:1.1rem;font-weight:700;color:#a855f7;font-variant-numeric:tabular-nums}
+.p-hora{font-size:.75rem;color:#555}
+.empty{padding:2rem;text-align:center;color:#444;font-size:.9rem}
+
+/* Ganador banner */
+.ganador-banner{display:none;background:linear-gradient(135deg,#1a1000,#0a0800);border:2px solid #fbbf24;border-radius:16px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;animation:pop .4s ease}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.gb-label{color:#fbbf24;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+.gb-num{font-size:4rem;font-weight:900;color:#fbbf24;line-height:1}
+.gb-nombre{font-size:1.3rem;color:#fff;font-weight:600}
+
+.badge{display:inline-block;padding:.3rem .8rem;border-radius:999px;font-size:.75rem;font-weight:600}
+.badge-sorteando{background:#a855f722;color:#a855f7;border:1px solid #a855f744}
+.badge-ganador{background:#fbbf2422;color:#fbbf24;border:1px solid #fbbf2444}
+.badge-espera{background:#1a1a2e;color:#555;border:1px solid #2a2a4a}
+
+.btn-primary{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Login -->
+  <div id="screen-login">
+    <h1>🔐 Admin <span>Rifa</span></h1>
+    <p class="sub" style="margin-bottom:2rem">Acceso exclusivo para administrador</p>
+    <input type="password" id="passInput" placeholder="Contraseña" maxlength="30"
+      onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-primary" onclick="login()">Entrar</button>
+    <p id="errLogin" style="color:#ef4444;font-size:.85rem;margin-top:.5rem;min-height:1rem"></p>
+  </div>
+
+  <!-- Panel admin -->
+  <div id="screen-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+      <h1>🎟️ <span>Admin Rifa</span></h1>
+      <span id="badgeEstado" class="badge badge-espera">En espera</span>
+    </div>
+    <p class="sub">Panel de control del sorteo</p>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="val" id="totalPart">0</div><div class="lbl">Participantes</div></div>
+      <div class="stat"><div class="val" id="totalFolios">—</div><div class="lbl">Folios únicos</div></div>
+    </div>
+
+    <!-- Ganador banner -->
+    <div class="ganador-banner" id="ganadorBanner">
+      <div class="gb-label">🏆 Ganador del sorteo</div>
+      <div class="gb-num" id="gbNum"></div>
+      <div class="gb-nombre" id="gbNombre"></div>
+    </div>
+
+    <!-- Botones -->
+    <button class="btn btn-sortear" id="btnSortear" onclick="ejecutarSorteo()">🎲 Ejecutar Sorteo</button>
+    <button class="btn btn-reset" onclick="resetSorteo()">↺ Resetear sorteo</button>
+
+    <!-- Lista participantes -->
+    <div class="lista-header">
+      <span>Participantes registrados</span>
+      <span id="fechaHoy"></span>
+    </div>
+    <div class="lista" id="lista"><div class="empty">Sin participantes aún</div></div>
+
+    <br>
+    <button class="btn btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const PASS = 'rifa2026'; // ← cambia esto si quieres
+
+const app = initializeApp({
+  apiKey: "AIzaSyAhPB0i7phzAa9XMLsCpzFMFr7khWIhCNM",
+  authDomain: "anuncios-ogb.firebaseapp.com",
+  databaseURL: "https://anuncios-ogb-default-rtdb.firebaseio.com",
+  projectId: "anuncios-ogb",
+  storageBucket: "anuncios-ogb.firebasestorage.app",
+  messagingSenderId: "22034025245",
+  appId: "1:22034025245:web:26a1fbef1b025a46b9eff4"
+});
+const db = getDatabase(app);
+
+let participantes = {};
+
+// ── Login ──────────────────────────────────────────────────────────────────
+window.login = function() {
+  const pass = document.getElementById('passInput').value;
+  if (pass === PASS) {
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('screen-panel').style.display = 'block';
+    sessionStorage.setItem('admin_ok','1');
+    iniciarPanel();
+  } else {
+    document.getElementById('errLogin').textContent = 'Contraseña incorrecta';
+  }
+}
+
+window.logout = function() {
+  sessionStorage.removeItem('admin_ok');
+  location.reload();
+}
+
+// ── Panel ──────────────────────────────────────────────────────────────────
+function iniciarPanel() {
+  const hoy = new Date();
+  document.getElementById('fechaHoy').textContent =
+    hoy.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+
+  // Escuchar participantes
+  onValue(ref(db,'participantes'), snap => {
+    participantes = snap.exists() ? snap.val() : {};
+    renderLista();
+  });
+
+  // Escuchar estado del sorteo
+  onValue(ref(db,'sorteo'), snap => {
+    const datos = snap.exists() ? snap.val() : {estado:'espera'};
+    actualizarEstado(datos);
+  });
+}
+
+function renderLista() {
+  const lista = document.getElementById('lista');
+  const arr = Object.values(participantes);
+  document.getElementById('totalPart').textContent = arr.length;
+  const folios = new Set(arr.map(p=>p.folio));
+  document.getElementById('totalFolios').textContent = folios.size || '—';
+
+  if (!arr.length) { lista.innerHTML = '<div class="empty">Sin participantes aún</div>'; return; }
+
+  // Ordenar por hora desc
+  arr.sort((a,b) => b.ts - a.ts);
+  lista.innerHTML = arr.map(p => {
+    const hora = new Date(p.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="participante">
+      <div>
+        <div class="p-nombre">${p.nombre}</div>
+        <div class="p-hora">${hora}</div>
+      </div>
+      <div class="p-folio">${p.folio}</div>
+    </div>`;
+  }).join('');
+}
+
+function actualizarEstado(datos) {
+  const badge = document.getElementById('badgeEstado');
+  const btn = document.getElementById('btnSortear');
+  const banner = document.getElementById('ganadorBanner');
+
+  if (datos.estado === 'sorteando') {
+    badge.className = 'badge badge-sorteando'; badge.textContent = '🎲 Sorteando...';
+    btn.disabled = true;
+    banner.style.display = 'none';
+  } else if (datos.estado === 'ganador') {
+    badge.className = 'badge badge-ganador'; badge.textContent = '🏆 Ganador';
+    btn.disabled = false; btn.textContent = '🔄 Nuevo sorteo';
+    document.getElementById('gbNum').textContent = datos.folio;
+    document.getElementById('gbNombre').textContent = datos.nombre || 'Folio ' + datos.folio;
+    banner.style.display = 'block';
+  } else {
+    badge.className = 'badge badge-espera'; badge.textContent = 'En espera';
+    btn.disabled = false; btn.textContent = '🎲 Ejecutar Sorteo';
+    banner.style.display = 'none';
+  }
+}
+
+// ── Sorteo ─────────────────────────────────────────────────────────────────
+window.ejecutarSorteo = async function() {
+  const arr = Object.values(participantes);
+  if (!arr.length) { alert('No hay participantes registrados'); return; }
+  if (!confirm(`¿Sortear entre ${arr.length} participante${arr.length!==1?'s':''}?`)) return;
+
+  // Señal "sorteando" → la TV empieza a girar
+  await set(ref(db,'sorteo'), { estado:'sorteando', ts: Date.now() });
+
+  // Esperar 4 segundos (animación en TV) y luego publicar ganador
+  setTimeout(async () => {
+    const ganador = arr[Math.floor(Math.random()*arr.length)];
+    await set(ref(db,'sorteo'), {
+      estado: 'ganador',
+      folio: ganador.folio,
+      nombre: ganador.nombre,
+      ts: Date.now()
+    });
+  }, 4000);
+}
+
+window.resetSorteo = async function() {
+  if (!confirm('¿Resetear el sorteo? Esto borra participantes y resultado.')) return;
+  await remove(ref(db,'participantes'));
+  await set(ref(db,'sorteo'), { estado:'espera', ts: Date.now() });
+}
+
+// Auto-login si ya tiene sesión
+if (sessionStorage.getItem('admin_ok')==='1') {
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-panel').style.display='block';
+  iniciarPanel();
+}
+</script>
+</body>
+</html>
