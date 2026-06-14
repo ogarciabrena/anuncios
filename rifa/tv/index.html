@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rifa — Smart TV</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0010;color:#fff;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;overflow:hidden}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .5s}
+canvas.show{opacity:1}
+.wrap{position:relative;z-index:1}
+h2{font-size:1.3rem;color:#666;font-weight:400;margin-bottom:1.5rem;letter-spacing:.05em;text-transform:uppercase}
+.contador{font-size:1rem;color:#a855f7;margin-bottom:2rem}
+.tambor{width:220px;height:220px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#0d001a);border:4px solid #a855f7;display:flex;align-items:center;justify-content:center;margin:0 auto 2rem;box-shadow:0 0 60px #a855f744}
+.num-roll{font-size:4rem;font-weight:900;color:#fbbf24;font-variant-numeric:tabular-nums}
+.estado{color:#555;font-size:1rem;margin-top:1rem}
+
+/* Ganador */
+.ganador{display:none;margin-top:2rem;animation:pop .5s ease}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.g-label{color:#fbbf24;font-size:.9rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem}
+.g-num{font-size:7rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.g-nombre{font-size:2rem;font-weight:700;color:#fff;margin-top:.3rem}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="wrap">
+  <h2>🎰 Sorteo en vivo</h2>
+  <div class="contador" id="contador">Cargando participantes...</div>
+  <div class="tambor"><div class="num-roll" id="roll">—</div></div>
+  <div class="estado" id="estado">Esperando que el admin ejecute el sorteo...</div>
+  <div class="ganador" id="ganador">
+    <div class="g-label">🏆 ¡Número Ganador!</div>
+    <div class="g-num" id="gNum"></div>
+    <div class="g-nombre" id="gNombre"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAhPB0i7phzAa9XMLsCpzFMFr7khWIhCNM",
+  authDomain: "anuncios-ogb.firebaseapp.com",
+  databaseURL: "https://anuncios-ogb-default-rtdb.firebaseio.com",
+  projectId: "anuncios-ogb",
+  storageBucket: "anuncios-ogb.firebasestorage.app",
+  messagingSenderId: "22034025245",
+  appId: "1:22034025245:web:26a1fbef1b025a46b9eff4"
+});
+const db = getDatabase(app);
+
+try{ document.documentElement.requestFullscreen(); }catch(e){}
+
+// Escuchar participantes
+onValue(ref(db,'participantes'), snap => {
+  const total = snap.exists() ? Object.keys(snap.val()).length : 0;
+  document.getElementById('contador').textContent = `👥 ${total} participante${total!==1?'s':''} registrado${total!==1?'s':''}`;
+});
+
+// Escuchar resultado del sorteo
+let animando = false;
+onValue(ref(db,'sorteo'), snap => {
+  if (!snap.exists()) return;
+  const datos = snap.val();
+  if (datos.estado === 'sorteando' && !animando) {
+    animando = true;
+    document.getElementById('estado').textContent = '🎲 Sorteando...';
+    document.getElementById('ganador').style.display = 'none';
+    animarTambor();
+  }
+  if (datos.estado === 'ganador') {
+    animando = false;
+    mostrarGanador(datos.folio, datos.nombre);
+  }
+  if (datos.estado === 'espera') {
+    animando = false;
+    document.getElementById('roll').textContent = '—';
+    document.getElementById('estado').textContent = 'Esperando que el admin ejecute el sorteo...';
+    document.getElementById('ganador').style.display = 'none';
+  }
+});
+
+function animarTambor() {
+  const roll = document.getElementById('roll');
+  let f = 0;
+  const iv = setInterval(() => {
+    roll.textContent = String(Math.floor(Math.random()*900)+100);
+    f++;
+    if(f>60){ clearInterval(iv); }
+  }, 60);
+}
+
+function mostrarGanador(folio, nombre) {
+  document.getElementById('roll').textContent = folio;
+  document.getElementById('gNum').textContent = folio;
+  document.getElementById('gNombre').textContent = nombre || 'Folio ' + folio;
+  document.getElementById('ganador').style.display = 'block';
+  document.getElementById('estado').textContent = '';
+  confeti();
+}
+
+function confeti() {
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  cv.width=innerWidth; cv.height=innerHeight; cv.classList.add('show');
+  const cols=['#a855f7','#fbbf24','#f472b6','#34d399','#60a5fa','#fff'];
+  const pz=Array.from({length:160},()=>({x:Math.random()*innerWidth,y:-20,w:6+Math.random()*10,h:6+Math.random()*10,c:cols[~~(Math.random()*cols.length)],s:3+Math.random()*4,r:Math.random()*360,sp:Math.random()*8-4}));
+  let fr=0;
+  function draw(){ctx.clearRect(0,0,cv.width,cv.height);pz.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();p.y+=p.s;p.r+=p.sp;p.x+=Math.sin(fr/20);if(p.y>cv.height)p.y=-20});fr++;if(fr<250)requestAnimationFrame(draw);else{ctx.clearRect(0,0,cv.width,cv.height);cv.classList.remove('show')}}
+  draw();
+}
+</script>
+</body>
+</html>
