@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Menú del Día</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#1a0a00;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow:hidden}
+  .logo{font-size:1rem;color:#f59e0b;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+  h1{font-family:'Playfair Display',serif;font-size:3.5rem;color:#f59e0b;margin-bottom:.25rem;text-align:center}
+  .fecha{color:#a16207;margin-bottom:2.5rem;font-size:1rem}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;width:100%;max-width:1100px}
+  .item{background:rgba(255,255,255,.05);border:1px solid rgba(245,158,11,.2);border-radius:16px;padding:1.75rem;display:flex;flex-direction:column;gap:.5rem;transition:transform .3s}
+  .item:hover{transform:scale(1.03)}
+  .item .emoji{font-size:2.5rem}
+  .item h3{font-size:1.2rem;font-weight:600;color:#fde68a}
+  .item p{color:#a78a5a;font-size:.9rem;line-height:1.5}
+  .item .precio{margin-top:auto;font-size:1.4rem;font-weight:700;color:#f59e0b}
+  footer{margin-top:2.5rem;color:#78350f;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="logo">🍽️ Lonchería Flor de Azalea</div>
+<h1>Menú del Día</h1>
+<p class="fecha" id="fecha"></p>
+<div class="grid">
+  <div class="item"><span class="emoji">🍲</span><h3>Sopa del Día</h3><p>Caldo de res con verduras de temporada</p><span class="precio">$35</span></div>
+  <div class="item"><span class="emoji">🍛</span><h3>Plato Fuerte</h3><p>Estofado de pollo con arroz blanco y ensalada</p><span class="precio">$70</span></div>
+  <div class="item"><span class="emoji">🫘</span><h3>Guisado</h3><p>Frijoles con chorizo · tortillas a mano</p><span class="precio">$45</span></div>
+  <div class="item"><span class="emoji">🥤</span><h3>Agua Fresca</h3><p>Jamaica · Horchata · Limón</p><span class="precio">$20</span></div>
+  <div class="item"><span class="emoji">🌮</span><h3>Taco de Guisado</h3><p>3 tacos con salsa verde o roja</p><span class="precio">$40</span></div>
+  <div class="item"><span class="emoji">🍮</span><h3>Postre</h3><p>Flan napolitano casero</p><span class="precio">$25</span></div>
+</div>
+<footer>Edita tu menú en ogarciabrena.github.io/anuncios · ALSET Automation</footer>
+<script>
+  const d=new Date();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('fecha').textContent=`${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} ${d.getFullYear()}`;
+  document.addEventListener('DOMContentLoaded',()=>{try{document.documentElement.requestFullscreen();}catch(e){}});
+</script>
+</body>
+</html>
